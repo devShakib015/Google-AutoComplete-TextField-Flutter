@@ -2,59 +2,61 @@ library google_places_flutter;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_places_flutter/model/place_details.dart';
 import 'package:google_places_flutter/model/place_type.dart';
 import 'package:google_places_flutter/model/prediction.dart';
-
-import 'package:rxdart/subjects.dart';
 import 'package:dio/dio.dart';
 import 'package:rxdart/rxdart.dart';
-
 import 'DioErrorHandler.dart';
 
 class GooglePlaceAutoCompleteTextField extends StatefulWidget {
-  InputDecoration inputDecoration;
-  ItemClick? itemClick;
-  GetPlaceDetailswWithLatLng? getPlaceDetailWithLatLng;
-  bool isLatLngRequired = true;
+  final InputDecoration inputDecoration;
+  final ItemClick? itemClick;
+  final GetPlaceDetailswWithLatLng? getPlaceDetailWithLatLng;
+  final bool isLatLngRequired;
+  final TextStyle textStyle;
+  final String googleAPIKey;
+  final int debounceTime;
+  final List<String>? countries;
+  final TextEditingController textEditingController;
+  final ListItemBuilder? itemBuilder;
+  final Widget? seperatedBuilder;
+  final BoxDecoration? boxDecoration;
+  final bool isCrossBtnShown;
+  final bool showError;
+  final double? containerHorizontalPadding;
+  final double? containerVerticalPadding;
+  final FocusNode? focusNode;
+  final PlaceType? placeType;
+  final String? language;
+  final double? nearByLatitude;
+  final double? nearByLongitude;
+  final double? radius;
 
-  TextStyle textStyle;
-  String googleAPIKey;
-  int debounceTime = 600;
-  List<String>? countries = [];
-  TextEditingController textEditingController = TextEditingController();
-  ListItemBuilder? itemBuilder;
-  Widget? seperatedBuilder;
-  void clearData;
-  BoxDecoration? boxDecoration;
-  bool isCrossBtnShown;
-  bool showError;
-  double? containerHorizontalPadding;
-  double? containerVerticalPadding;
-  FocusNode? focusNode;
-  PlaceType? placeType;
-  String? language;
-
-  GooglePlaceAutoCompleteTextField(
-      {required this.textEditingController,
-      required this.googleAPIKey,
-      this.debounceTime: 600,
-      this.inputDecoration: const InputDecoration(),
-      this.itemClick,
-      this.isLatLngRequired = true,
-      this.textStyle: const TextStyle(),
-      this.countries,
-      this.getPlaceDetailWithLatLng,
-      this.itemBuilder,
-      this.boxDecoration,
-      this.isCrossBtnShown = true,
-      this.seperatedBuilder,
-      this.showError = true,
-      this.containerHorizontalPadding,
-      this.containerVerticalPadding,
-      this.focusNode,
-      this.placeType,this.language='en'});
+  GooglePlaceAutoCompleteTextField({
+    required this.textEditingController,
+    required this.googleAPIKey,
+    this.debounceTime = 600,
+    this.inputDecoration = const InputDecoration(),
+    this.itemClick,
+    this.isLatLngRequired = true,
+    this.textStyle = const TextStyle(),
+    this.countries = const [],
+    this.getPlaceDetailWithLatLng,
+    this.itemBuilder,
+    this.boxDecoration,
+    this.isCrossBtnShown = true,
+    this.seperatedBuilder,
+    this.showError = true,
+    this.containerHorizontalPadding,
+    this.containerVerticalPadding,
+    this.focusNode,
+    this.placeType,
+    this.language = 'en',
+    this.nearByLatitude,
+    this.nearByLongitude,
+    this.radius = 1000,
+  });
 
   @override
   _GooglePlaceAutoCompleteTextFieldState createState() =>
@@ -124,9 +126,12 @@ class _GooglePlaceAutoCompleteTextFieldState
     String apiURL =
         "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$text&key=${widget.googleAPIKey}&language=${widget.language}";
 
-    if (widget.countries != null) {
-      // in
+    if (widget.nearByLatitude != null && widget.nearByLongitude != null) {
+      apiURL +=
+          "&location=${widget.nearByLatitude},${widget.nearByLongitude}&radius=${widget.radius}";
+    }
 
+    if (widget.countries != null) {
       for (int i = 0; i < widget.countries!.length; i++) {
         String country = widget.countries![i];
 
@@ -152,9 +157,9 @@ class _GooglePlaceAutoCompleteTextFieldState
       String url = kIsWeb ? proxyURL + apiURL : apiURL;
 
       /// Add the custom header to the options
-      final options = kIsWeb
-          ? Options(headers: {"x-requested-with": "XMLHttpRequest"})
-          : null;
+      // final options = kIsWeb
+      //     ? Options(headers: {"x-requested-with": "XMLHttpRequest"})
+      //     : null;
       Response response = await _dio.get(url);
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
@@ -181,7 +186,7 @@ class _GooglePlaceAutoCompleteTextFieldState
 
       this._overlayEntry = null;
       this._overlayEntry = this._createOverlayEntry();
-      Overlay.of(context)!.insert(this._overlayEntry!);
+      Overlay.of(context).insert(this._overlayEntry!);
     } catch (e) {
       var errorHandler = ErrorHandler.internal().handleError(e);
       _showSnackBar("${errorHandler.message}");
@@ -203,7 +208,7 @@ class _GooglePlaceAutoCompleteTextFieldState
   }
 
   OverlayEntry? _createOverlayEntry() {
-    if (context != null && context.findRenderObject() != null) {
+    if (context.findRenderObject() != null) {
       RenderBox renderBox = context.findRenderObject() as RenderBox;
       var size = renderBox.size;
       var offset = renderBox.localToGlobal(Offset.zero);
@@ -248,15 +253,14 @@ class _GooglePlaceAutoCompleteTextFieldState
                 ),
               ));
     }
+    return null;
   }
 
   removeOverlay() {
     alPredictions.clear();
     this._overlayEntry = this._createOverlayEntry();
-    if (context != null) {
-      Overlay.of(context).insert(this._overlayEntry!);
-      this._overlayEntry!.markNeedsBuild();
-    }
+    Overlay.of(context).insert(this._overlayEntry!);
+    this._overlayEntry!.markNeedsBuild();
   }
 
   Future<Response?> getPlaceDetailsFromPlaceId(Prediction prediction) async {
@@ -279,6 +283,7 @@ class _GooglePlaceAutoCompleteTextFieldState
       var errorHandler = ErrorHandler.internal().handleError(e);
       _showSnackBar("${errorHandler.message}");
     }
+    return null;
   }
 
   void clearData() {

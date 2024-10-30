@@ -41,3 +41,7 @@
 ## 2.0.9
 
 * Filter added by PlaceType and language 
+
+## 2.1.2
+
+* Bug fixes and improvements

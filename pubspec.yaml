@@ -4,12 +4,12 @@ version: 2.1.2
 homepage: https://github.com/Shrutimahajan/Google-AutoComplete-TextField-Flutter
 
 environment:
-  sdk: '>=3.4.1 <4.0.0'
+  sdk: ^3.7.0
 
 dependencies:
   flutter:
     sdk: flutter
-  dio: ^5.7.0
+  dio: ^5.8.0+1
   rxdart: ^0.28.0
 
 dev_dependencies:
